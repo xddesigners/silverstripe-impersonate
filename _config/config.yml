@@ -1,0 +1,27 @@
+---
+Name: impersonate
+---
+XD\Impersonate\Service\ImpersonationService:
+  # Members of this Group (by Code), in addition to anyone with ADMIN permission, may impersonate.
+  allowed_group_code: 'Impersonators'
+
+  # If false (default), NOBODY may impersonate a Member who is themselves an ADMIN or in the
+  # Impersonators group — regardless of the acting Member's own permissions. Set true to allow a
+  # genuine ADMIN (never a non-admin Impersonators-group member) to impersonate another privileged
+  # account. This is deliberately off by default: it is the main defence against using impersonation
+  # itself as a privilege-escalation path.
+  allow_impersonating_privileged: false
+
+  # Maximum length (seconds) an impersonation session may run before it is automatically reverted.
+  max_duration: 1800 # 30 minutes
+
+XD\Impersonate\Control\ImpersonateController:
+  # Require a recent sudo-mode re-authentication (SilverStripe's own elevated-session check) before
+  # impersonation can start. Requires the site to have a sudo-mode challenge flow available.
+  require_sudo_mode: true
+
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\Control\Director:
+    properties:
+      Middlewares:
+        ImpersonationExpiryMiddleware: '%$XD\Impersonate\Middleware\ImpersonationExpiryMiddleware'

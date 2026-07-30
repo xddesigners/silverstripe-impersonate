@@ -1,0 +1,11 @@
+en:
+  XD\Impersonate\Control\ImpersonateController:
+    POST_REQUIRED: 'This action requires a POST request.'
+    CSRF_FAILURE: 'Your session timed out. Please refresh and try again.'
+    NOT_LOGGED_IN: 'You must be logged in to do this.'
+    ALREADY_IMPERSONATING: 'You are already impersonating someone. Stop that session first.'
+    NOT_ALLOWED: 'You do not have permission to impersonate other members.'
+    SUDO_MODE_REQUIRED: 'Please re-authenticate before starting an impersonation session.'
+    MEMBER_NOT_FOUND: 'That member could not be found.'
+    TARGET_NOT_ALLOWED: 'This member cannot be impersonated.'
+    NOT_IMPERSONATING: 'You are not currently impersonating anyone.'

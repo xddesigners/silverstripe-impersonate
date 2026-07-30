@@ -1,0 +1,6 @@
+---
+Name: impersonateroutes
+---
+SilverStripe\Control\Director:
+  rules:
+    'impersonate//$Action/$ID': 'XD\Impersonate\Control\ImpersonateController'
