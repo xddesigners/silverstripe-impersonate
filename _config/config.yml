@@ -5,6 +5,10 @@ XD\Impersonate\Service\ImpersonationService:
   # Members of this Group (by Code), in addition to anyone with ADMIN permission, may impersonate.
   allowed_group_code: 'Impersonators'
 
+  # Members of any Group holding this permission (registered by ImpersonatePermissionProvider, shown under
+  # Security > Groups > Permissions) may also impersonate. The auto-seeded Impersonators group holds it.
+  allowed_permission_code: 'IMPERSONATE_MEMBERS'
+
   # If false (default), NOBODY may impersonate a Member who is themselves an ADMIN or in the
   # Impersonators group — regardless of the acting Member's own permissions. Set true to allow a
   # genuine ADMIN (never a non-admin Impersonators-group member) to impersonate another privileged
@@ -25,3 +29,8 @@ SilverStripe\Core\Injector\Injector:
     properties:
       Middlewares:
         ImpersonationExpiryMiddleware: '%$XD\Impersonate\Middleware\ImpersonationExpiryMiddleware'
+
+# Seed the Impersonators group (holding the impersonate permission) on dev/build.
+SilverStripe\Security\Group:
+  extensions:
+    - XD\Impersonate\Extension\ImpersonatorsGroupExtension

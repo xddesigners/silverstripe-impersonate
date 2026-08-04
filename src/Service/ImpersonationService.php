@@ -28,6 +28,8 @@ class ImpersonationService
 
     private static string $allowed_group_code = 'Impersonators';
 
+    private static string $allowed_permission_code = 'IMPERSONATE_MEMBERS';
+
     private static bool $allow_impersonating_privileged = false;
 
     private static int $max_duration = 1800;
@@ -42,7 +44,9 @@ class ImpersonationService
      */
     public static function canImpersonate(Member $actor): bool
     {
-        return Permission::checkMember($actor, 'ADMIN') || static::isInAllowedGroup($actor);
+        return Permission::checkMember($actor, 'ADMIN')
+            || Permission::checkMember($actor, (string) static::config()->get('allowed_permission_code'))
+            || static::isInAllowedGroup($actor);
     }
 
     /**
@@ -57,7 +61,9 @@ class ImpersonationService
             return false;
         }
 
-        $targetIsPrivileged = Permission::checkMember($target, 'ADMIN') || static::isInAllowedGroup($target);
+        $targetIsPrivileged = Permission::checkMember($target, 'ADMIN')
+            || Permission::checkMember($target, (string) static::config()->get('allowed_permission_code'))
+            || static::isInAllowedGroup($target);
 
         if (!$targetIsPrivileged) {
             return true;

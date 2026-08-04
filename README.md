@@ -1,7 +1,7 @@
 # silverstripe-impersonate
 
-Lets Administrators — or members of a designated Group — temporarily log in as another Member, with a
-safe, auditable way back to their own account.
+Lets Administrators — or members granted an impersonate permission, or in a designated Group — temporarily
+log in as another Member, with a safe, auditable way back to their own account.
 
 Login (both becoming the target, and switching back) is always completed through SilverStripe's own
 `IdentityStore` — this module never maintains a parallel session mechanism. While impersonating,
@@ -14,9 +14,19 @@ themselves.
 composer require xddesigners/silverstripe-impersonate
 ```
 
-If you want a role below ADMIN to be able to impersonate, create a `Group` with `Code = 'Impersonators'`
-(configurable — see below) and add members to it. ADMIN permission alone is always sufficient regardless
-of group membership.
+### Who can impersonate
+
+Three ways, checked on every request against the *actual* logged-in Member:
+
+1. **ADMIN** permission — always sufficient, regardless of anything below.
+2. The **Impersonate other members** permission (`IMPERSONATE_MEMBERS`) — grantable to any Group under
+   _Security → Groups → Permissions_ (category "Impersonation").
+3. Membership of the **Impersonators** group (matched by `Code`, default `Impersonators`).
+
+Both #2 and #3 are set up for you: on `dev/build` the module **auto-seeds the Impersonators group holding
+that permission**, so it exists in the CMS ready to drop members into — no manual group/permission setup
+needed. (The group's `Code` is stored exactly as configured, since the module matches on it.) Both the
+permission code and the group code are configurable — see [Configuration](#configuration).
 
 ## Usage
 
@@ -54,11 +64,12 @@ Every one of these is a deliberate, tested design decision, not an afterthought:
 3. **No nested impersonation.** You cannot start impersonating a second person while already
    impersonating someone else — `start` hard-rejects if a session is already active. You always know
    exactly one original identity is being tracked at a time.
-4. **No privilege escalation via the target.** You can never impersonate a Member who is themselves an
-   ADMIN or in the Impersonators group unless *you* are a genuine ADMIN **and** the site has explicitly
-   opted in via `allow_impersonating_privileged: true`. A non-admin Impersonators-group member can never
-   impersonate a privileged account, regardless of that config flag — this is the main defence against
-   using the feature itself to escalate privileges.
+4. **No privilege escalation via the target.** You can never impersonate a Member who is themselves
+   privileged — an ADMIN, a holder of the impersonate permission, or a member of the Impersonators group —
+   unless *you* are a genuine ADMIN **and** the site has explicitly opted in via
+   `allow_impersonating_privileged: true`. A non-admin impersonator can never impersonate a privileged
+   account, regardless of that config flag — this is the main defence against using the feature itself to
+   escalate privileges.
 5. **Optional sudo-mode gate** (`require_sudo_mode`, default on) — requires a recent re-authentication
    (SilverStripe's own elevated-session check) before an impersonation session can begin, the same
    mechanism the framework already uses to gate other sensitive actions.
@@ -82,10 +93,15 @@ Every one of these is a deliberate, tested design decision, not an afterthought:
 
 ```yaml
 XD\Impersonate\Service\ImpersonationService:
-  allowed_group_code: 'Impersonators'
+  allowed_group_code: 'Impersonators'         # Group (by Code) whose members may impersonate
+  allowed_permission_code: 'IMPERSONATE_MEMBERS' # permission that grants impersonation; '' to disable
   allow_impersonating_privileged: false
   max_duration: 1800 # seconds
 
 XD\Impersonate\Control\ImpersonateController:
   require_sudo_mode: true
 ```
+
+The permission is registered by `ImpersonatePermissionProvider` (auto-discovered) and the Impersonators
+group is seeded by `ImpersonatorsGroupExtension` on `Group` — both keyed off the codes above, so overriding
+a code renames the permission/group the module looks for and seeds.
