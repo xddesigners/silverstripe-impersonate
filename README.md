@@ -64,12 +64,16 @@ Every one of these is a deliberate, tested design decision, not an afterthought:
 3. **No nested impersonation.** You cannot start impersonating a second person while already
    impersonating someone else — `start` hard-rejects if a session is already active. You always know
    exactly one original identity is being tracked at a time.
-4. **No privilege escalation via the target.** You can never impersonate a Member who is themselves
-   privileged — an ADMIN, a holder of the impersonate permission, or a member of the Impersonators group —
-   unless *you* are a genuine ADMIN **and** the site has explicitly opted in via
-   `allow_impersonating_privileged: true`. A non-admin impersonator can never impersonate a privileged
-   account, regardless of that config flag — this is the main defence against using the feature itself to
-   escalate privileges.
+4. **No privilege escalation via the target.** Administrators are **never** a valid target — no one can
+   impersonate an ADMIN, regardless of who they are or any config flag (an absolute block, ahead of the rule
+   below). Beyond that, you can never impersonate a Member who is otherwise privileged — a holder of the
+   impersonate permission or a member of the Impersonators group — unless *you* are a genuine ADMIN **and**
+   the site has explicitly opted in via `allow_impersonating_privileged: true`; a non-admin impersonator can
+   never impersonate a privileged account, regardless of that flag. Sites can additionally mark **any Group**
+   as off-limits with the **"Exclude this group from impersonation"** checkbox (added to every Group in
+   Security > Groups) — members of a flagged group can never be impersonated, the no-code way to protect
+   privileged / system groups. The built-in Administrators group is seeded with this on. Together these are
+   the main defence against using the feature itself to escalate privileges.
 5. **Optional sudo-mode gate** (`require_sudo_mode`, default on) — requires a recent re-authentication
    (SilverStripe's own elevated-session check) before an impersonation session can begin, the same
    mechanism the framework already uses to gate other sensitive actions.
@@ -104,4 +108,6 @@ XD\Impersonate\Control\ImpersonateController:
 
 The permission is registered by `ImpersonatePermissionProvider` (auto-discovered) and the Impersonators
 group is seeded by `ImpersonatorsGroupExtension` on `Group` — both keyed off the codes above, so overriding
-a code renames the permission/group the module looks for and seeds.
+a code renames the permission/group the module looks for and seeds. That same extension adds the
+`ExcludeFromImpersonation` checkbox to every Group (see safety point 4) and seeds it on the Administrators
+group. Run `dev/build` after installing so the new `Group.ExcludeFromImpersonation` column is created.

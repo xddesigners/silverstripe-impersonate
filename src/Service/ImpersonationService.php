@@ -50,10 +50,14 @@ class ImpersonationService
     }
 
     /**
-     * Can $actor impersonate $target specifically? Blocks impersonating yourself, and — unless
-     * allow_impersonating_privileged is on and $actor is a genuine ADMIN — blocks impersonating anyone
-     * who is themselves an ADMIN or in the allowed group. A non-admin Impersonators-group member can
-     * never impersonate a privileged account, regardless of config.
+     * Can $actor impersonate $target specifically? Blocks, in order:
+     *  - impersonating yourself;
+     *  - impersonating an ADMIN — ABSOLUTE, ignores allow_impersonating_privileged (admins are never a target);
+     *  - impersonating a member of any group flagged `ExcludeFromImpersonation` in the CMS (privileged /
+     *    system groups the site marks in Security > Groups);
+     *  - impersonating anyone otherwise privileged (holds allowed_permission_code or is in the allowed group)
+     *    — permitted only if $actor is a genuine ADMIN and allow_impersonating_privileged is on.
+     * A non-admin Impersonators-group member can never impersonate a privileged account, regardless of config.
      */
     public static function canBeImpersonated(Member $actor, Member $target): bool
     {
@@ -61,8 +65,17 @@ class ImpersonationService
             return false;
         }
 
-        $targetIsPrivileged = Permission::checkMember($target, 'ADMIN')
-            || Permission::checkMember($target, (string) static::config()->get('allowed_permission_code'))
+        // Administrators can NEVER be impersonated — absolute, regardless of allow_impersonating_privileged.
+        if (Permission::checkMember($target, 'ADMIN')) {
+            return false;
+        }
+
+        // CMS-managed exclusion: a member in any group flagged ExcludeFromImpersonation is off-limits.
+        if ($target->Groups()->filter('ExcludeFromImpersonation', true)->exists()) {
+            return false;
+        }
+
+        $targetIsPrivileged = Permission::checkMember($target, (string) static::config()->get('allowed_permission_code'))
             || static::isInAllowedGroup($target);
 
         if (!$targetIsPrivileged) {
